@@ -1,0 +1,6 @@
+[2026-10-27T22:57:33+00:00] [INFO] INÍCIO: timeline/static; origem=/mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/copy.csv; destino=/mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/output/timeline_20261027_195732_785477
+[2026-10-27T22:57:40+00:00] [INFO] Dashboard HTML criado: /mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/output/timeline_20261027_195732_785477/dashboard.html
+[2026-10-27T22:57:40+00:00] [INFO] Publicações: 3627 únicas, 3627 datadas; duplicatas: 0; tags: 910; posts ranqueados: 50.
+[2026-10-27T22:57:40+00:00] [INFO] Dashboard sem exportação de CSVs auxiliares; ranking de posts calculado quando soma_count está ausente.
+[2026-10-27T22:57:40+00:00] [INFO] Execução concluída com sucesso.
+[2026-10-27T22:57:40+00:00] [INFO] Relatório salvo: /mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/output/timeline_20261027_195732_785477/relatorio_processamento.txt

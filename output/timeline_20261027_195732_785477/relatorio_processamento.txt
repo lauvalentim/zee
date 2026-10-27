@@ -1,0 +1,19 @@
+EXECUCAO
+--------
+operacao: timeline
+modo: None
+inicio_utc: 2026-10-27T22:57:33.801514+00:00
+pasta: /mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/output/timeline_20261027_195732_785477
+versao: 0.8
+status: CONCLUÍDO
+fim_utc: 2026-10-27T22:57:40.377933+00:00
+
+RESULTADO
+---------
+operacao: dashboard_integrado
+entrada: {"arquivo": "/mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/copy.csv", "bytes": 3945030, "sha256": "e5fc338feb091bc14f7bb62bcfe7b72dc6365017b7f4ae440fa4a1539ce649e7"}
+arquivos_saida: {"dashboard_html": "/mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/output/timeline_20261027_195732_785477/dashboard.html"}
+parametros: {"timezone": "America/Sao_Paulo", "deduplicacao": true, "unidade_tempo": "dia e minuto de publicação", "ranking_posts": "soma_count ou reply_count + like_count + repost_count/retweet_count", "ranking_hashtags": "coluna hashtags", "exportacao_csv_auxiliar": false}
+contagens: {"linhas_lidas": 3627, "publicacoes_unicas": 3627, "duplicatas_ignoradas": 0, "registros_sem_chave_confiavel": 0, "postagens_datadas": 3627, "datas_ausentes_invalidas": 0, "autores_distintos": 1631, "hashtags_distintas": 910, "posts_ranqueados": 50, "posts_sem_pontuacao_valida": 0, "origem_datas": {"unix_timestamp": 3627}, "avisos": {}, "dias_no_intervalo": 6}
+resumo: {"primeiro_dia": "2026-10-06", "ultimo_dia": "2026-10-11", "maior_volume_diario": 904, "dias_pico": ["2026-10-06"], "maior_volume_minuto": 16, "mais_utilizadas": [["#eleições2026", 3044], ["#elenão", 1190], ["#fandomscomlula", 1042], ["#eleicões2026", 238], ["#lula", 223], ["#lula13já", 176], ["#eleicoes2026", 125], ["#flaviobolsonaro", 76], ["#armyscomlula", 70], ["#vote13", 69]]}
+observacao: Datas representam a PUBLICAÇÃO, não a coleta. A interface funciona sem conexão à internet.
