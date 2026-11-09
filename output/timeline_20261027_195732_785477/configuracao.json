@@ -1,9 +1,0 @@
-{
-  "operacao": "timeline",
-  "modo": null,
-  "entrada": "/mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/copy.csv",
-  "recursive": false,
-  "self_loops": false,
-  "pasta_saida": "/mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/output/timeline_20261027_195732_785477",
-  "timezone": "America/Sao_Paulo"
-}

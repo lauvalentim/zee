@@ -1,0 +1,19 @@
+EXECUCAO
+--------
+operacao: timeline
+modo: None
+inicio_utc: 2026-11-09T13:06:32.961150+00:00
+pasta: /mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/output/timeline_20261109_100632_955233
+versao: 0.13.1
+status: CONCLUÍDO
+fim_utc: 2026-11-09T13:06:34.981209+00:00
+
+RESULTADO
+---------
+operacao: dashboard_integrado
+entrada: {"arquivo": "/mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/twitter_consolidado.csv", "bytes": 15076688, "sha256": "2a090bba6017497acdf86341fa3995751f33d2d964cc1e383f2eaf02ce73abb8"}
+arquivos_saida: {"dashboard_html": "/mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/output/timeline_20261109_100632_955233/dashboard.html"}
+parametros: {"timezone": "America/Sao_Paulo", "deduplicacao": true, "unidade_tempo": "dia e minuto de publicação", "ranking_posts": "soma_count ou reply_count + like_count + repost_count/retweet_count", "ranking_hashtags": "coluna hashtags", "exportacao_csv_auxiliar": false, "perfil_ranking": "15", "limite_posts": 15, "limite_hashtags": 15, "hashtag_excluida": "#eleições2026", "escopo_exclusao": "somente ranking de hashtags; demais métricas de postagens preservadas"}
+contagens: {"linhas_lidas": 15693, "publicacoes_unicas": 15693, "duplicatas_ignoradas": 0, "registros_sem_chave_confiavel": 0, "postagens_datadas": 15693, "datas_ausentes_invalidas": 0, "autores_distintos": 6879, "hashtags_distintas": 2688, "posts_ranqueados": 15, "hashtags_exibidas": 15, "posts_exibidos": 15, "posts_sem_pontuacao_valida": 0, "origem_datas": {"unix_timestamp": 15693}, "avisos": {}, "dias_com_postagens": 20, "dias_no_intervalo": 20, "dias_sem_postagens_no_intervalo": 0}
+resumo: {"primeiro_dia": "2026-10-06", "ultimo_dia": "2026-10-25", "datas_mais_antigas_observadas": ["2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15"], "datas_mais_recentes_observadas": ["2026-10-16", "2026-10-17", "2026-10-18", "2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25"], "maior_volume_diario": 5500, "dias_pico": ["2026-10-25"], "maior_volume_minuto": 86, "mais_utilizadas": [["#elenão", 1289], ["#fandomscomlula", 1152], ["#lula", 1013], ["#eleicoes2026", 570], ["#debatenaband", 538], ["#brasil", 488], ["#flaviobolsonaro", 367], ["#eleições", 329], ["#lulapelademocracia", 307], ["#eleicões2026", 292]]}
+observacao: Datas representam a PUBLICAÇÃO, não a coleta. A interface funciona sem conexão à internet.

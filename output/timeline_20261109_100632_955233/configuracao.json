@@ -1,0 +1,12 @@
+{
+  "operacao": "timeline",
+  "modo": null,
+  "entrada": "/mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/twitter_consolidado.csv",
+  "recursive": false,
+  "self_loops": false,
+  "pasta_saida": "/mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/output/timeline_20261109_100632_955233",
+  "timezone": "America/Sao_Paulo",
+  "cleaning_mode": null,
+  "ranking_size": "15",
+  "exclude_tag": "#eleições2026"
+}

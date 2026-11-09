@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Eleições 2026 vistas pelo Twitter (X).">
+  <link rel="icon" type="image/png" href="./assets/cropped_circle_image.ico">
+  <title>#eleições2026 — Projeto</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="scripts.js" defer></script>
+</head>
+<body>
+  <div class="site-shell">
+    <header class="site-header">
+      <a class="brand-pill" href="#home" aria-label="Eleições 2026 — ir para a Home">
+        <span class="brand-hash">#</span><span class="brand-initial">E</span><span class="brand-rest">eleições 2026</span>
+      </a>
+      <nav class="main-nav" aria-label="Navegação principal">
+        <a href="#home" data-route="home" class="nav-link">Home</a>
+        <a href="#metodologia" data-route="metodologia" class="nav-link">Metodologia</a>
+        <a href="#sobre" data-route="sobre" class="nav-link">Sobre</a>
+        <a href="#visualizacoes" data-route="visualizacoes" class="nav-link">Visualizações</a>
+      </nav>
+    </header>
+
+    <main id="mainContent">
+      <section id="home" class="page home-page" aria-labelledby="homeTitle" data-page>
+        <div class="home-intro" data-home-slide="0">
+          <h1 id="homeTitle" class="home-title"><span class="display-hash">#</span><span class="display-initial">E</span><span class="display-word">leições 2026 vistas pelo Twitter (X)</span></h1>
+          <button class="start-button" id="startHomeSlides" type="button">Comece por aqui <span aria-hidden="true">↗</span></button>
+        </div>
+        <div class="home-visual-slide slide-one" data-home-slide="1" hidden aria-label="Apresentação do projeto — primeiro slide">
+          <img class="home-slide-art" width="2069" height="1242" src="assets/HOME_1.svg" alt="Jogando um pouco de luz sobre os tópicos de conversação no Twitter (X) durante o segundo turno das eleições 2026 no Brasil.">
+        </div>
+        <div class="home-visual-slide slide-two" data-home-slide="2" hidden aria-label="Apresentação do projeto — segundo slide">
+          <img class="home-slide-art" width="2097" height="1242" src="assets/HOME_2.svg" alt="Se interessou? Navegue pelas visualizações para descobrir o que se andou falando na rede.">
+        </div>
+        <div class="home-visual-slide slide-three" data-home-slide="3" hidden>
+          <img src="assets/HOME_0.svg" class="home-slide-centered" alt="Bandeira fim"/>
+        </div>
+        <div class="home-slide-controls" id="homeSlideControls" hidden aria-label="Controles da apresentação">
+          <button id="homePrevious" class="slide-arrow" type="button" aria-label="Voltar slide">←</button>
+          <div class="slide-dots" aria-label="Etapas da apresentação">
+            <button type="button" data-go-slide="0" aria-label="Ir para a abertura"></button>
+            <button type="button" data-go-slide="1" aria-label="Ir para o primeiro slide"></button>
+            <button type="button" data-go-slide="2" aria-label="Ir para o segundo slide"></button>
+            <button type="button" data-go-slide="3" aria-label="Ir para o terceiro slide"></button>
+          </div>
+          <button id="homeNext" class="slide-arrow" type="button" aria-label="Avançar slide">→</button>
+        </div>
+      </section>
+      <section id="metodologia" class="page svg-page methodology-page" aria-label="Metodologia do projeto" data-page hidden>
+        <img class="section-art methodology-art" src="assets/METODOLOGIA.svg" width="1247" height="867" alt="Metodologia: descrição dos procedimentos de coleta, processamento e visualização do projeto #Eleições2026.">
+      </section>
+
+      <section id="sobre" class="page svg-page about-page" aria-label="Sobre o projeto" data-page hidden>
+        <img class="section-art about-art" src="assets/SOBRE.svg" width="875" height="875" alt="Sobre: apresentação do projeto #Eleições2026 dentro de uma forma circular azul.">
+      </section>
+
+      <section id="visualizacoes" class="page visualizations-page" aria-labelledby="visualizationsTitle" data-page hidden>
+        <div class="visualizations-content">
+          <p class="visualizations-eyebrow">#eleições2026</p>
+          <h2 id="visualizationsTitle" class="visualizations-title">Explore as visualizações</h2>
+          <p class="visualizations-description">Escolha uma forma de explorar os dados coletados no Twitter (X).</p>
+          <div class="visualization-options">
+            <a class="visualization-card" href="visualizacoes/grafo.html" aria-label="Abrir área do grafo de rede (em preparação)">
+              <span class="visualization-graphic graph-preview" aria-hidden="true">
+              </span>
+              <span class="visualization-card-footer"><span><strong>Grafo de rede</strong><small>Relações e menções entre usuários</small></span><span class="visualization-arrow" aria-hidden="true">↗</span></span>
+              <span class="visualization-note">Área reservada para integração</span>
+            </a>
+            <a class="visualization-card" href="visualizacoes/dashboard.html" aria-label="Abrir demonstração do dashboard de dados gerais">
+              <span class="visualization-graphic chart-preview" aria-hidden="true">
+              </span>
+              <span class="visualization-card-footer"><span><strong>Dashboard de dados gerais</strong><small>Indicadores, postagens e hashtags</small></span><span class="visualization-arrow" aria-hidden="true">↗</span></span>
+              <span class="visualization-note">Demonstração com dados fictícios</span>
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+  </div>
+</body>
+</html>

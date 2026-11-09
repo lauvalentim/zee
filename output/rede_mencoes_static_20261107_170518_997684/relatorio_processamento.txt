@@ -1,0 +1,22 @@
+EXECUCAO
+--------
+operacao: process
+modo: static
+inicio_utc: 2026-11-07T20:05:19.010046+00:00
+pasta: /mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/output/rede_mencoes_static_20261107_170518_997684
+versao: 0.11
+status: CONCLUÍDO
+fim_utc: 2026-11-07T20:05:22.953925+00:00
+
+RESULTADO
+---------
+operacao: process
+modo: static
+entrada: {"arquivo": "/mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/twitter_consolidado.csv", "bytes": 15076688, "sha256": "2a090bba6017497acdf86341fa3995751f33d2d964cc1e383f2eaf02ce73abb8"}
+saidas: {"gexf_estatico": "/mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/output/rede_mencoes_static_20261107_170518_997684/twitter_consolidado_rede.gexf", "csv_eventos": "/mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/output/rede_mencoes_static_20261107_170518_997684/twitter_consolidado_rede_eventos.csv", "json_rede_agregada": "/mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/output/rede_mencoes_static_20261107_170518_997684/twitter_consolidado_rede.json"}
+contagens: {"publicacoes_lidas": 15693, "author_ids_notacao_cientifica": 9940, "eventos_observados": 3330, "eventos_com_data_valida": 3330, "autolacos_descartados": 67}
+interacoes_por_tipo: {"mention": 3330}
+rede_agregada_referencia: {"nos": 7728, "pares_direcionados": 2363}
+datas: {"origens": {"unix_timestamp": 15693}, "datas_invalidas_amostra": [], "regra": "Data do post por evento: ISO com fuso; fallback unix_timestamp; UTC. Eventos sem data ficam no CSV de eventos, mas não na rede dinâmica. Nenhuma primeira/última ocorrência é utilizada como tempo do evento."}
+auditoria: {"duplicatas_amostra": [], "alvos_invalidos_amostra": [], "conflitos_handle_author_id": {}}
+limites: {"escopo": "Arestas exclusivamente de menções explícitas na coluna mentions; respostas, citações e repostagens não são contadas.", "identidade": "Destino identificado por handle, não por ID persistente.", "evento": "Uma mesma publicação pode produzir eventos de tipos diferentes.", "temporal": "Cada aresta do GEXF temporal representa um evento de peso 1; a Timeline pode exibir instantes ou seleção acumulada conforme sua janela."}

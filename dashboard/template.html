@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <title>ZEE — Métricas do banco de dados</title>
+  <style>__STYLE__</style>
+  <script>__PLOTLY__</script>
+</head>
+<body>
+<div class="site">
+  <header class="site-header dashboard-site-header">
+    <a class="brand-pill" id="brandHome" href="../index.html#home" aria-label="Eleições 2026 — ir para a Home">
+      <span class="brand-hash">#</span><span class="brand-initial">E</span><span class="brand-rest">eleições 2026</span>
+    </a>
+    <nav class="main-nav" aria-label="Navegação principal">
+      <a class="nav-link" href="../index.html#home">Home</a>
+      <a class="nav-link" href="../index.html#metodologia">Metodologia</a>
+      <a class="nav-link" href="../index.html#sobre">Sobre</a>
+      <a class="nav-link active" href="../index.html#visualizacoes" aria-current="page">Visualizações</a>
+    </nav>
+  </header>
+  <div class="intro">
+    <h1><span class="initial">M</span>étricas do Banco de Dados</h1>
+    <p>Balanço geral dos dados coletados durante todo o período.</p>
+  </div>
+  <nav class="tabs" aria-label="Telas do dashboard">
+    <button class="active" type="button" data-tab="overview" aria-current="page">Visão Geral</button>
+    <button type="button" data-tab="posts">Postagens</button>
+    <button type="button" data-tab="tags">Hashtags</button>
+    <button type="button" data-tab="timeline">Timeline</button>
+  </nav>
+  <main>
+    <section id="overview" class="tab active" aria-label="Visão geral do corpus">
+      <div class="metrics-wrap"><div class="metrics">
+        <article class="metric"><span>Número total de postagens coletadas</span><strong>__NPOSTS__</strong></article>
+        <article class="metric"><span>Número total de usuários encontrados</span><strong>__AUTHORS__</strong></article>
+        <article class="metric"><span>Número total de hashtags coletadas</span><strong>__NTAGS__</strong></article>
+        <article class="metric"><span>Período completo da coleta</span><strong>__NDAYS__ dias</strong></article>
+      </div></div>
+      <section class="panel chart-panel" aria-labelledby="overviewTitle">
+        <div class="toolbar"><h2 id="overviewTitle">Volume de dados</h2>
+          <label class="field-label">Selecione por dia: <select id="overviewDay" aria-label="Selecionar dia para o gráfico por minuto"></select></label>
+        </div>
+        <div class="toggle" aria-label="Agrupamento temporal do gráfico">
+          <button id="overviewDailyButton" type="button" aria-pressed="true">Por Dia</button>
+          <button id="overviewMinuteButton" type="button" aria-pressed="false">Por Minuto</button>
+        </div>
+        <div class="graph-area"><div id="overviewDailyChart" class="graphbox">__DAILY_OVERVIEW__</div><div id="overviewMinuteChart" class="graphbox hidden"></div></div>
+      </section>
+      <p class="footnote">Publicações de __FIRST__ a __LAST__ · Sem data válida: __INVALID__ · Duplicatas desconsideradas: __DUPLICATES__.</p>
+    </section>
+
+    <section id="posts" class="tab" aria-label="Ranqueamento de postagens">
+      <div class="metrics-wrap"><div class="metrics compact-metrics">
+        <article class="metric"><span>Publicações no corpus</span><strong>__NPOSTS__</strong></article>
+        <article class="metric"><span>Autores distintos</span><strong>__AUTHORS__</strong></article>
+        <article class="metric"><span>Período analisado</span><strong>__NDAYS__ dias</strong></article>
+        <article class="metric"><span>Postagens no ranking</span><strong id="postsCount">—</strong></article>
+      </div></div>
+      <section class="panel" aria-labelledby="postsHeading">
+        <div class="section-heading"><div><p class="eyebrow">PUBLICAÇÕES</p><h2 id="postsHeading">Ranqueamento de postagens</h2><p class="subtext">Postagens com maior soma de curtidas, respostas e repostagens.</p></div><span class="count-label" id="postsTotal"></span></div>
+        <div id="postList" class="post-grid" tabindex="0" aria-label="Lista de postagens, rolável"></div>
+      </section>
+    </section>
+
+    <section id="tags" class="tab" aria-label="Ranqueamento de hashtags">
+      <div class="metrics-wrap"><div class="metrics compact-metrics">
+        <article class="metric"><span>Hashtags distintas</span><strong>__NTAGS__</strong></article>
+        <article class="metric"><span>Publicações no corpus</span><strong>__NPOSTS__</strong></article>
+        <article class="metric"><span>Autores distintos</span><strong>__AUTHORS__</strong></article>
+        <article class="metric"><span>Período analisado</span><strong>__NDAYS__ dias</strong></article>
+      </div></div>
+      <section class="panel" aria-labelledby="tagsHeading">
+        <div class="section-heading"><div><p class="eyebrow">HASHTAGS</p><h2 id="tagsHeading">Ranqueamento das Hashtags</h2><p class="subtext">Frequência de utilização das hashtags no corpus.</p></div><div class="tag-actions"><span class="count-label" id="tagsTotal"></span><label class="search-wrap"><span class="visually-hidden">Buscar hashtags</span><input id="tagSearch" type="search" placeholder="Buscar hashtag" autocomplete="off"></label></div></div>
+        <div class="tag-list-header"><span>Hashtag</span><span>Repetições</span></div>
+        <div id="tagList" class="tag-list" tabindex="0" aria-label="Ranking de hashtags, rolável"></div>
+      </section>
+    </section>
+
+    <section id="timeline" class="tab" aria-label="Timeline de postagens">
+      <div class="metrics-wrap"><div class="metrics">
+        <article class="metric"><span>Postagens datadas</span><strong>__DATED__</strong></article>
+        <article class="metric"><span>Dias analisados</span><strong>__NDAYS__</strong></article>
+        <article class="metric"><span>Média de postagens por dia</span><strong>__MEAN__</strong></article>
+        <article class="metric"><span>Maior volume diário</span><strong>__PEAK__</strong></article>
+      </div></div>
+      <section class="panel chart-panel" aria-labelledby="timelineHeading">
+        <div class="toolbar">
+          <h2 id="timelineHeading">Volume de dados por dia</h2>
+          <div class="timeline-filters" id="timelineMinuteFilters" hidden>
+            <label class="field-label">Selecione por dia: <select id="day" aria-label="Dia das publicações"></select></label>
+            <label class="field-label">Horário: <select id="timelineHour" aria-label="Selecionar intervalo de uma hora"></select></label>
+          </div>
+        </div>
+        <div class="toggle" aria-label="Agrupamento temporal da Timeline">
+          <button id="timelineDailyButton" type="button" aria-pressed="true">Por Dia</button>
+          <button id="timelineMinuteButton" type="button" aria-pressed="false">Por Minuto</button>
+        </div>
+        <div class="graph-area">
+          <div id="timelineDailyChart" class="graphbox">__DAILY_TIMELINE__</div>
+          <div id="minuteChart" class="graphbox hidden"></div>
+        </div>
+        <p id="timelineMinuteNote" class="subtext" hidden>Intervalos de um minuto, incluindo períodos sem postagens. Fuso: __TZ__.</p>
+      </section>
+    </section>
+  </main>
+  <footer>Dashboard gerado pelo ZEE · Indicadores relativos ao CSV analisado · A data de publicação pode diferir da data de coleta.</footer>
+</div>
+<div class="dialog-backdrop" id="infoDialog" role="presentation"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle"><button class="dialog-close" type="button" id="dialogClose">Fechar</button><h2 id="dialogTitle"></h2><div id="dialogBody"></div></div></div>
+<script>__SCRIPT__</script>
+</body>
+</html>

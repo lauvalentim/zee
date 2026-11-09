@@ -1,0 +1,7 @@
+[2026-11-09T13:06:32+00:00] [INFO] INÍCIO: timeline/static; origem=/mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/twitter_consolidado.csv; destino=/mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/output/timeline_20261109_100632_955233
+[2026-11-09T13:06:34+00:00] [INFO] Dashboard HTML criado: /mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/output/timeline_20261109_100632_955233/dashboard.html
+[2026-11-09T13:06:34+00:00] [INFO] Publicações: 15693 únicas, 15693 datadas; duplicatas: 0; tags distintas após exclusão: 2688; posts exibidos: 15; tags exibidas: 15.
+[2026-11-09T13:06:34+00:00] [INFO] Ranking no dashboard: perfil=15; hashtag excluída=#eleições2026.
+[2026-11-09T13:06:34+00:00] [INFO] Dashboard sem exportação de CSVs auxiliares; ranking de posts calculado quando soma_count está ausente.
+[2026-11-09T13:06:34+00:00] [INFO] Execução concluída com sucesso.
+[2026-11-09T13:06:34+00:00] [INFO] Relatório salvo: /mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/output/timeline_20261109_100632_955233/relatorio_processamento.txt

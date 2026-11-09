@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ZEE v0.8: consolidação Zeeschuimer e rede de interações do X.
+"""ZEE v0.13.1: consolidação Zeeschuimer e rede de interações do X.
 
 Requisitos: Python >=3.10; pip install networkx plotly
 Execute sem parâmetros para o menu; --help para comandos.
@@ -253,6 +253,97 @@ def merge(folder, output, recursive=False, log=None):
             'sem_chave_confiavel':unidentified,
             'aviso':'Linhas sem ID/link confiável são preservadas; duplicatas entre elas podem permanecer.'}
 
+
+
+def clean_duplicates(source, folder, log, cleaning_mode='post'):
+    """Gera novo CSV sem duplicatas, sem alterar o arquivo selecionado.
+
+    post: mesma chave de publicação (key_of: ID/link), conservando linhas
+          sem chave identificável, mesmo que visualmente idênticas.
+    exact: todas as colunas e valores coincidem; não usa ID/link.
+    Sempre preserva a PRIMEIRA ocorrência e a ordem de entrada.
+    """
+    if cleaning_mode not in ('post', 'exact'):
+        raise ValueError(f'Modo de limpeza desconhecido: {cleaning_mode}')
+    source = Path(source)
+    headers = csv_headers(source)
+    if cleaning_mode == 'post' and not ({'id', 'link'} & set(headers)):
+        raise ValueError('Não há colunas id ou link. Use o modo exact para comparar linhas inteiras.')
+    sep = detectar_delimitador(source)
+    input_info = summarize_file(source)
+    folder = Path(folder)
+    dest = folder / (source.stem + '_limpo.csv')
+    if dest.resolve() == source.resolve():
+        raise ValueError('Arquivo de saída não pode substituir o arquivo de entrada.')
+    seen = set()
+    counts = Counter()
+    duplicate_examples = []
+    temp_path = None
+    log.say('Limpeza iniciada: modo=' + cleaning_mode + '; entrada=' + str(source))
+    try:
+        # Arquivo temporário só é publicado depois que todas as linhas forem validadas.
+        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8-sig', newline='',
+                                         prefix='.zee_limpeza_', suffix='.tmp',
+                                         dir=folder, delete=False) as stream:
+            temp_path = Path(stream.name)
+            writer = csv.DictWriter(stream, fieldnames=headers, delimiter=sep,
+                                    lineterminator='\n', extrasaction='raise')
+            writer.writeheader()
+            for line_number, row in enumerate(reader(source), 1):
+                counts['linhas_lidas'] += 1
+                if cleaning_mode == 'post':
+                    identity = key_of(row)
+                    if identity is None:
+                        # Não inferir que dois posts são iguais sem identificador confiável.
+                        counts['sem_chave_confiavel_preservadas'] += 1
+                        writer.writerow(row)
+                        counts['linhas_preservadas'] += 1
+                        continue
+                    token = identity
+                else:
+                    # Compara os valores lidos de todas as colunas, não a representação
+                    # física da linha (quoting CSV pode variar sem mudar o conteúdo).
+                    token = tuple(row.get(col, '') for col in headers)
+                if token in seen:
+                    counts['duplicatas_removidas'] += 1
+                    if len(duplicate_examples) < 10:
+                        duplicate_examples.append({
+                            'registro': line_number,
+                            'chave': str(token) if cleaning_mode == 'post'
+                                     else '(linha inteira idêntica)'
+                        })
+                    continue
+                seen.add(token)
+                writer.writerow(row)
+                counts['linhas_preservadas'] += 1
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temp_path, dest)
+        temp_path = None
+    finally:
+        if temp_path is not None and temp_path.exists():
+            temp_path.unlink()
+    counts['duplicatas_removidas'] += 0
+    counts['sem_chave_confiavel_preservadas'] += 0
+    log.say(f'Limpeza finalizada: lidas={counts["linhas_lidas"]}; '
+            f'preservadas={counts["linhas_preservadas"]}; '
+            f'removidas={counts["duplicatas_removidas"]}')
+    log.say('CSV limpo salvo em: ' + str(dest))
+    if counts['sem_chave_confiavel_preservadas']:
+        log.say('Registros sem ID/link confiável preservados por segurança; '
+                'use o modo exato para remover repetições idênticas dessas linhas.', 'WARN')
+    return {
+        'operacao': 'limpeza_duplicatas',
+        'modo': cleaning_mode,
+        'entrada': input_info,
+        'saida': summarize_file(dest),
+        'contagens': dict(counts),
+        'duplicatas_amostra': duplicate_examples,
+        'criterio': ('Mesmo ID da postagem ou link (função key_of); linhas sem chave confiável são mantidas.'
+                     if cleaning_mode == 'post' else
+                     'Igualdade de todas as colunas e valores após leitura CSV.'),
+        'preservacao': 'Primeira ocorrência mantida; ordem das linhas e colunas preservada; origem inalterada.'
+    }
 
 
 def export_event_gexf(graph, events, path):
@@ -585,13 +676,34 @@ def metadata_hashtags(source,folder,log):
 
 
 
-def timeline_dashboard(source, folder, log, tz_name='America/Sao_Paulo', deduplicate=True):
+DASHBOARD_RANKING_PRESETS = {
+    'all': (50, None),    # 50 posts e todas as hashtags
+    '25': (25, 25),       # 25 posts e 25 hashtags
+    '15': (15, 15),       # 15 posts e 15 hashtags (padrão)
+}
+
+
+def normalize_excluded_hashtag(raw):
+    """Normaliza uma única hashtag para comparação com extract_hashtags()."""
+    value = (raw or '').strip().removeprefix('#').casefold()
+    if not value:
+        return None
+    if re.fullmatch(r'[^\W_][\w]*', value, flags=re.UNICODE) is None:
+        raise ValueError('Informe somente uma hashtag, com ou sem #, sem espaços (ex.: #riograndedosul).')
+    return value
+
+
+def timeline_dashboard(source, folder, log, tz_name='America/Sao_Paulo', deduplicate=True, ranking_size='15', exclude_tag=None):
     """Dashboard offline: visão geral, séries dia/minuto, top posts e hashtags.
 
     Os dados ficam incorporados no HTML. Não gera CSVs auxiliares.
     Ranking dos posts usa soma_count quando válida; senão calcula soma das
     três colunas de engajamento. Estatísticas observadas no CSV, não na plataforma.
     """
+    if ranking_size not in DASHBOARD_RANKING_PRESETS:
+        raise ValueError('Perfil de ranking inválido. Escolha all, 25 ou 15.')
+    posts_limit, tags_limit = DASHBOARD_RANKING_PRESETS[ranking_size]
+    excluded_tag = normalize_excluded_hashtag(exclude_tag)
     try:
         import plotly.graph_objects as go
         from plotly.offline import get_plotlyjs
@@ -625,6 +737,7 @@ def timeline_dashboard(source, folder, log, tz_name='America/Sao_Paulo', dedupli
         if identity is None: without_key += 1
         seq += 1
         author = (row.get('author') or '').strip()
+        author_fullname = (row.get('author_fullname') or '').strip()
         if author: authors.add(author.casefold())
         timestamp, origin = parse_timestamp(row.get('timestamp',''), row.get('unix_timestamp',''))
         local = timestamp.astimezone(tz) if timestamp else None
@@ -636,7 +749,10 @@ def timeline_dashboard(source, folder, log, tz_name='America/Sao_Paulo', dedupli
             without_date += 1
             causes[origin] += 1
         if tag_col:
-            tag_count.update(extract_hashtags(row.get(tag_col,'')))
+            # Exclusão apenas do ranking; mantém os posts, datas e CSV de entrada.
+            for tag in extract_hashtags(row.get(tag_col,'')):
+                if tag != excluded_tag:
+                    tag_count[tag] += 1
         try:
             if row.get('soma_count','').strip():
                 score, _ = parse_count(row['soma_count'], 'soma_count', seq)
@@ -648,6 +764,7 @@ def timeline_dashboard(source, folder, log, tz_name='America/Sao_Paulo', dedupli
                 no_score += 1
             else:
                 top_posts.append({'score':score, 'seq':seq, 'author':author or '(sem autor)',
+                    'author_fullname':author_fullname,
                     'body':row.get('body',''), 'link':row.get('link',''),
                     'datetime':local.isoformat(timespec='seconds') if local else '',
                     'likes':row.get('like_count',''), 'reposts':row.get(repost_col,'') if repost_col else '',
@@ -658,9 +775,11 @@ def timeline_dashboard(source, folder, log, tz_name='America/Sao_Paulo', dedupli
     if not days_count:
         raise ValueError('Não há postagens com data válida para gerar a Timeline.')
     top_posts.sort(key=lambda item: (-item['score'],item['seq']))
-    top_posts = top_posts[:50]
-    tags_sorted = sorted(tag_count.items(),key=lambda item:(-item[1],item[0]))
+    top_posts = top_posts[:posts_limit]
+    tags_all = sorted(tag_count.items(),key=lambda item:(-item[1],item[0]))
+    tags_sorted = tags_all if tags_limit is None else tags_all[:tags_limit]
     first,last = min(days_count),max(days_count)
+    days_with_posts = len(days_count)
     span = (last-first).days + 1
     if span > 36600:
         raise ValueError('Intervalo superior a 100 anos; confira as datas.')
@@ -679,93 +798,78 @@ def timeline_dashboard(source, folder, log, tz_name='America/Sao_Paulo', dedupli
     def js_safe(data):
         return json.dumps(data,ensure_ascii=False,separators=(',',':')).replace('<','\\u003c').replace('>','\\u003e').replace('&','\\u0026')
 
+    # Modelo B: linha fina com pontos circulares discretos nas duas séries diárias.
     fig = go.Figure(go.Scatter(x=[d.isoformat() for d in dates],y=daily,
-         mode='lines',line={'color':'#4778a8','width':2.5},fill='tozeroy',
-         fillcolor='rgba(71,120,168,.16)',name='Postagens',
+         mode='lines+markers',line={'color':'#05B70B','width':1.3},
+         marker={'symbol':'circle','size':4,'color':'#05B70B'},
+         fill='tozeroy',fillcolor='rgba(5,183,11,.08)',name='Postagens',
          hovertemplate='%{x}<br><b>%{y}</b> postagens<extra></extra>'))
     fig.update_layout(template='plotly_white',height=360,margin=dict(l=55,r=20,t=20,b=50),
-         xaxis=dict(title='Data de publicação',type='date',rangeslider={'visible':True}),
-         yaxis=dict(title='Postagens por dia',rangemode='tozero'),font={'family':'Arial, sans-serif'})
+         xaxis=dict(title='Data de publicação',type='date',rangeslider={'visible':True},gridcolor='#dedede'),
+         yaxis=dict(title='Postagens por dia',rangemode='tozero',gridcolor='#dedede'),
+         paper_bgcolor='#f6f6f6',plot_bgcolor='#f6f6f6',font={'family':'SF Pro, SF Pro Display, Segoe UI, Arial, sans-serif'})
     daily_fragment = fig.to_html(full_html=False,include_plotlyjs=False,
                                   config={'displaylogo':False,'responsive':True})
     payload = js_safe({'minute':day_minutes, 'posts':top_posts,
                        'tags':[['#'+tag,n] for tag,n in tags_sorted],
                        'available_days':sorted(day_minutes), 'default_day':peaks[0]})
-    html = r'''<!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ZEE — Dashboard</title><script>__PLOTLY__</script><style>
-:root{font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:#263449;background:#f6f8fb}
-*{box-sizing:border-box}body{margin:0}.shell{max-width:1140px;margin:auto;padding:27px 23px 65px}
-header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:22px}
-h1{font-size:24px;margin:0}h2{font-size:19px;margin:0 0 12px}h3{font-size:15px;margin:0 0 8px}
-p{color:#5e6d7d;line-height:1.55}.muted{color:#5e6d7d;font-size:13px}.eyebrow{font-size:12px;color:#68819b;margin:0 0 4px}
-.tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px;border-bottom:1px solid #dbe2ea;padding-bottom:12px}
-.tabs button{background:transparent;border:1px solid transparent;color:#536478;border-radius:9px;padding:11px 14px;cursor:pointer;font:inherit;font-size:14px}
-.tabs button.active{background:#e5eef8;color:#245582;border-color:#bcd1e3;font-weight:650}
-.tab{display:none}.tab.active{display:block}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:17px 0}
-.metric,.panel{background:#fff;border:1px solid #e0e7ef;border-radius:12px;padding:19px}.metric strong{display:block;font-size:26px;font-variant-numeric:tabular-nums}
-.metric span{font-size:12px;color:#69798b}.panel{margin-bottom:15px}.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-select,input{font:inherit;padding:9px;border:1px solid #cbd7e4;border-radius:8px;background:white;max-width:100%}
-#minuteChart{height:385px;width:100%}.post{border-top:1px solid #e4eaf0;padding:17px 0}.post:first-child{border-top:0}
-.post-head{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}.post-body{color:#344459;white-space:pre-wrap;overflow-wrap:anywhere}
-.post-score{font-weight:700;color:#315f8d}.tag-row{display:grid;grid-template-columns:minmax(140px,1fr) 3fr 68px;gap:12px;align-items:center;padding:9px 0}
-.tag-name{overflow-wrap:anywhere}.bar{height:9px;border-radius:20px;background:#e6edf4;overflow:hidden}.bar-fill{height:100%;background:#5689b8;border-radius:20px}
-.small-link{color:#32699e}footer{font-size:12px;color:#718093;margin-top:25px}.empty{padding:18px;color:#6b7784}
-@media(max-width:650px){.metrics{grid-template-columns:repeat(2,1fr)}.tag-row{grid-template-columns:1fr 1.5fr 45px;gap:6px}.shell{padding:16px}}
-</style></head><body><div class="shell">
-<header><div><div class="eyebrow">ZEE · Zeeschuimer / X</div><h1>Dashboard de publicações</h1></div><div class="muted">__TZ__</div></header>
-<nav class="tabs" aria-label="Telas do dashboard"><button class="active" data-tab="overview">Visão geral</button><button data-tab="timeline">Timeline</button><button data-tab="posts">Posts</button><button data-tab="tags">Hashtags</button></nav>
-<section id="overview" class="tab active"><h2>Visão geral do corpus</h2><p>Indicadores calculados a partir das publicações presentes no CSV.</p>
-<div class="metrics"><div class="metric"><strong>__NPOSTS__</strong><span>Publicações únicas observadas</span></div><div class="metric"><strong>__AUTHORS__</strong><span>Perfis autores distintos</span></div><div class="metric"><strong>__NTAGS__</strong><span>Hashtags distintas</span></div><div class="metric"><strong>__NDAYS__</strong><span>Dias no intervalo de publicação</span></div></div>
-<div class="panel"><h3>Volume de postagens por dia</h3><div class="muted">Selecione Timeline para examinar os minutos.</div>__DAILY_OVERVIEW__</div>
-<div class="panel muted">Período: __FIRST__ a __LAST__. Publicações sem data válida: __INVALID__. Duplicatas desconsideradas: __DUPLICATES__.</div></section>
-<section id="timeline" class="tab"><h2>Timeline</h2><p>Volume por dia e por minuto conforme a <b>data de publicação</b>, não necessariamente a data de coleta.</p>
-<div class="metrics"><div class="metric"><strong>__DATED__</strong><span>Postagens com data válida</span></div><div class="metric"><strong>__NDAYS__</strong><span>Dias no intervalo</span></div><div class="metric"><strong>__MEAN__</strong><span>Média diária, incluindo zeros</span></div><div class="metric"><strong>__PEAK__</strong><span>Maior volume diário</span></div></div>
-<div class="panel"><h3>Volume diário</h3>__DAILY_TIMELINE__</div>
-<div class="panel"><div class="toolbar"><h3>Volume por minuto — gráfico de linha</h3><label>Selecionar dia <select id="day"></select></label></div><div id="minuteChart"></div><p class="muted">São apresentados os 1.440 minutos do dia, inclusive os minutos com zero postagens. Horários agregados no fuso selecionado.</p></div></section>
-<section id="posts" class="tab"><div class="toolbar"><div><h2>Ranqueamento de postagens</h2><p>50 maiores valores de soma_count, em ordem decrescente.</p></div><span class="muted" id="postsTotal"></span></div><div id="postList" class="panel"></div></section>
-<section id="tags" class="tab"><h2>Ranqueamento de hashtags</h2><p>Frequência de utilização das tags na coluna original de hashtags.</p><div class="panel"><div class="toolbar"><label>Buscar tag <input type="search" id="tagSearch" placeholder="#hashtag"></label><span class="muted" id="tagsTotal"></span></div><div id="tagList"></div></div></section>
-<footer>Dashboard gerado pelo ZEE · Valores referentes somente ao arquivo analisado · As contagens não representam a totalidade das postagens da plataforma.</footer>
-</div><script>
-const data=__DATA__;
-const $=id=>document.getElementById(id);
-const el=(name,cls,text)=>{const n=document.createElement(name);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n};
-const fmt=n=>Number(n).toLocaleString('pt-BR');
-function switchTab(name){document.querySelectorAll('.tab').forEach(n=>n.classList.toggle('active',n.id===name));document.querySelectorAll('[data-tab]').forEach(n=>n.classList.toggle('active',n.dataset.tab===name));if(name==='timeline'){Plotly.Plots.resize($('minuteChart'));document.querySelectorAll('#timeline .js-plotly-plot').forEach(n=>Plotly.Plots.resize(n));}if(name==='overview')document.querySelectorAll('#overview .js-plotly-plot').forEach(n=>Plotly.Plots.resize(n));}
-document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
-const allMinutes=Array.from({length:1440},(_,i)=>String(Math.floor(i/60)).padStart(2,'0')+':'+String(i%60).padStart(2,'0'));
-for(const day of data.available_days){const o=el('option','',day);o.value=day;$('day').appendChild(o);}
-$('day').value=data.default_day;
-function minutePlot(){const date=$('day').value,map=data.minute[date]||{};
- const amounts=allMinutes.map(t=>map[t]||0);
- Plotly.react('minuteChart',[{type:'scatter',mode:'lines',x:allMinutes,y:amounts,line:{color:'#4778a8',width:2},fill:'tozeroy',fillcolor:'rgba(71,120,168,.13)',hovertemplate:date+' %{x}<br><b>%{y}</b> postagens<extra></extra>'}],{
- template:'plotly_white',margin:{l:60,r:15,t:15,b:60},xaxis:{title:'Horário (HH:mm)',type:'category',tickmode:'array',tickvals:['00:00','03:00','06:00','09:00','12:00','15:00','18:00','21:00','23:59'],rangeslider:{visible:true}},yaxis:{title:'Postagens por minuto',rangemode:'tozero'},font:{family:'Arial, sans-serif'},autosize:true},{displaylogo:false,responsive:true});}
-$('day').addEventListener('change',minutePlot);minutePlot();
-$('postsTotal').textContent=fmt(data.posts.length)+' postagens';
-if(!data.posts.length)$('postList').appendChild(el('div','empty','Nenhum post com contagens válidas.'));
-for(const [i,p] of data.posts.entries()){
- const card=el('article','post'),head=el('div','post-head'),label=el('strong','',`${i+1}. ${p.author}`),score=el('span','post-score',fmt(p.score)+' interações');head.append(label,score);card.append(head);
- if(p.datetime)card.appendChild(el('div','muted',p.datetime));card.appendChild(el('div','post-body',p.body||'(sem texto)'));
- card.appendChild(el('div','muted',`Curtidas: ${p.likes||0} · Repostagens: ${p.reposts||0} · Respostas: ${p.replies||0}`));
- if(/^https:\/\/(?:www\.)?(?:x\.com|twitter\.com)\//i.test(p.link||'')){const a=el('a','small-link','Abrir publicação');a.href=p.link;a.target='_blank';a.rel='noopener noreferrer';card.appendChild(a)}
- $('postList').appendChild(card);
-}
-function showTags(){const search=$('tagSearch').value.trim().toLocaleLowerCase('pt-BR');const filtered=data.tags.filter(t=>t[0].toLocaleLowerCase('pt-BR').includes(search));$('tagsTotal').textContent=fmt(filtered.length)+' hashtags';const container=$('tagList');container.replaceChildren();const biggest=data.tags.length?data.tags[0][1]:1;
- for(const [tag,quantity] of filtered.slice(0,200)){const row=el('div','tag-row'),name=el('span','tag-name',tag),bar=el('div','bar'),fill=el('div','bar-fill');fill.style.width=(100*quantity/biggest)+'%';bar.appendChild(fill);row.append(name,bar,el('span','',fmt(quantity)));container.appendChild(row)}
- if(filtered.length>200)container.appendChild(el('p','muted','Exibindo as 200 primeiras tags filtradas. Refine a busca para localizar outras.'));
- if(!filtered.length)container.appendChild(el('p','empty','Nenhuma hashtag encontrada.'));
-}
-$('tagSearch').addEventListener('input',showTags);showTags();
-</script></body></html>'''
+    # Interface reproduzida a partir do frame Figma 1:678, mantida fora da lógica de análise.
+    # O HTML final incorpora CSS, JS e Plotly para continuar funcionando offline.
+    ui_dir = Path(__file__).resolve().parent / 'dashboard'
+    for required_ui_file in ('template.html', 'style.css', 'scripts.js'):
+        if not (ui_dir / required_ui_file).is_file():
+            raise FileNotFoundError(f'Arquivo da interface ausente: {ui_dir / required_ui_file}')
+    html = (ui_dir / 'template.html').read_text(encoding='utf-8')
+    css = (ui_dir / 'style.css').read_text(encoding='utf-8')
+    scripts = (ui_dir / 'scripts.js').read_text(encoding='utf-8')
+    scripts = scripts.replace('__DATA__', payload)
+    # Estilização do gráfico por minuto, criado dinamicamente por scripts.js.
+    # Interceptar as chamadas do Plotly evita exigir mudanças no template externo.
+    # Todas as séries Scatter com linhas ganham pontos circulares; dados intactos.
+    pixel_dot_style = r'''
+(function () {
+  'use strict';
+  const plotly = window.Plotly;
+  if (!plotly) return;
+  function applyDotStyle(traces) {
+    if (!Array.isArray(traces)) return;
+    for (const trace of traces) {
+      if (!trace || (trace.type && trace.type !== 'scatter' && trace.type !== 'scattergl')) continue;
+      const mode = trace.mode || 'lines';
+      if (mode.indexOf('lines') === -1) continue;
+      trace.mode = 'lines+markers';
+      // A cor dos círculos acompanha a cor original da linha.
+      // Não forçar verde: a série por hora/minuto pode ser amarela.
+      const originalLineColor = trace.line && trace.line.color;
+      const originalMarkerColor = trace.marker && trace.marker.color;
+      trace.line = Object.assign({}, trace.line, { width: 1.3 });
+      const markerStyle = { symbol: 'circle', size: 3 };
+      if (originalLineColor) markerStyle.color = originalLineColor;
+      else if (originalMarkerColor) markerStyle.color = originalMarkerColor;
+      trace.marker = Object.assign({}, trace.marker, markerStyle);
+    }
+  }
+  for (const name of ['newPlot', 'react']) {
+    const original = plotly[name];
+    if (typeof original !== 'function') continue;
+    plotly[name] = function (graph, data, layout, config) {
+      applyDotStyle(data);
+      return original.apply(this, arguments);
+    };
+  }
+})();
+'''
+    scripts = pixel_dot_style + '\n' + scripts
+    html = html.replace('__STYLE__', css).replace('__SCRIPT__', scripts)
     replacements = {
         '__TZ__':escape(tz_name), '__NPOSTS__':f'{seq:,}'.replace(',','.'),
         '__AUTHORS__':f'{len(authors):,}'.replace(',','.'),
-        '__NTAGS__':f'{len(tag_count):,}'.replace(',','.'), '__NDAYS__':str(span),
+        '__NTAGS__':f'{len(tag_count):,}'.replace(',','.'), '__NDAYS__':str(days_with_posts),
         '__FIRST__':first.isoformat(), '__LAST__':last.isoformat(),
         '__INVALID__':str(without_date),'__DUPLICATES__':str(duplicates),
         '__DATED__':str(dated),'__MEAN__':f'{dated/span:.1f}'.replace('.',','),
         '__PEAK__':str(peak), '__DAILY_OVERVIEW__':daily_fragment,
-        '__DAILY_TIMELINE__':daily_fragment.replace('id="','id="tl_',1),
+        '__DAILY_TIMELINE__':daily_fragment,
         '__DATA__':payload, '__PLOTLY__':get_plotlyjs()
     }
     # Cada fragmento do Plotly precisa de ID único (inclusive os scripts internos).
@@ -775,10 +879,72 @@ $('tagSearch').addEventListener('input',showTags);showTags();
     replacements['__DAILY_TIMELINE__']=replacement_daily_2
     for key,value in replacements.items():
         html=html.replace(key,value)
+    # Adição não destrutiva ao template externo (Figma): exibe nome completo
+    # sobre o @ no card, sem depender de alterar dashboard/scripts.js.
+    # Textos são sempre adicionados via textContent, evitando HTML não confiável.
+    fullnames_for_ui = js_safe([{'author':p['author'],
+        'author_fullname':p['author_fullname']} for p in top_posts
+        if p.get('author_fullname')])
+    addon = r"""
+<style>
+.zee-author-fullname { display:block; font:inherit; font-weight:700; line-height:inherit; }
+.zee-author-identity { display:flex; flex-direction:column; align-items:flex-start; min-width:0; }
+</style>
+<script>
+(function () {
+  const posts = __ZEE_FULLNAMES__;
+  if (!posts.length) return;
+  function update() {
+    const root = document.querySelector('#postList, #postsList, #posts-list, .posts-list, .post-list') || document;
+    const cards = root.querySelectorAll('article.post, article.post-card, .post-card, [data-post-card], article');
+    for (const card of cards) {
+      if (card.querySelector('.zee-author-fullname')) continue;
+      const candidates = card.querySelectorAll('.post-head strong, .post-author, .author-handle, .author-name, strong');
+      for (const target of candidates) {
+        if (target.querySelector('.zee-author-fullname')) continue;
+        const shown = (target.textContent || '').trim();
+        // A correspondência é com o @ exibido, e não com o corpo da postagem.
+        const shownHandle = shown.replace(/^\d+\.\s*/, '').replace(/^@/, '').toLowerCase();
+        const post = posts.find(p => shownHandle === p.author.replace(/^@/, '').toLowerCase());
+        if (!post || !post.author_fullname || post.author_fullname === shown) continue;
+        const wrap = document.createElement('span');
+        wrap.className = 'zee-author-identity';
+        const fullname = document.createElement('strong');
+        fullname.className = 'zee-author-fullname';
+        fullname.textContent = post.author_fullname;
+        target.parentNode.insertBefore(wrap, target);
+        wrap.appendChild(fullname);
+        wrap.appendChild(target);
+        break;
+      }
+    }
+  }
+  // A aba de postagens pode ser criada ao ser aberta: observar novas inserções.
+  let scheduled = false;
+  const watcher = new MutationObserver(function () {
+    if (scheduled) return;
+    scheduled = true;
+    queueMicrotask(function () { scheduled = false; update(); });
+  });
+  function init() {
+    update();
+    const list = document.querySelector('#postList, #postsList, #posts-list, .posts-list, .post-list');
+    watcher.observe(list || document.body, {childList:true, subtree:true});
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+""".replace('__ZEE_FULLNAMES__',fullnames_for_ui)
+    if '</body>' in html:
+        html = html.replace('</body>', addon + '</body>', 1)
+    else:
+        html += addon
     dest=Path(folder)/'dashboard.html'
     dest.write_text(html,encoding='utf-8')
     log.say(f'Dashboard HTML criado: {dest}')
-    log.say(f'Publicações: {seq} únicas, {dated} datadas; duplicatas: {duplicates}; tags: {len(tag_count)}; posts ranqueados: {len(top_posts)}.')
+    log.say(f'Publicações: {seq} únicas, {dated} datadas; duplicatas: {duplicates}; tags distintas após exclusão: {len(tag_count)}; posts exibidos: {len(top_posts)}; tags exibidas: {len(tags_sorted)}.')
+    log.say(f'Ranking no dashboard: perfil={ranking_size}; hashtag excluída={"#"+excluded_tag if excluded_tag else "nenhuma"}.')
     log.say('Dashboard sem exportação de CSVs auxiliares; ranking de posts calculado quando soma_count está ausente.')
     return {
         'operacao':'dashboard_integrado', 'entrada':summarize_file(source),
@@ -786,27 +952,35 @@ $('tagSearch').addEventListener('input',showTags);showTags();
         'parametros':{'timezone':tz_name,'deduplicacao':deduplicate,'unidade_tempo':'dia e minuto de publicação',
             'ranking_posts':'soma_count ou reply_count + like_count + repost_count/retweet_count',
             'ranking_hashtags':f'coluna {tag_col}' if tag_col else 'coluna não encontrada',
-            'exportacao_csv_auxiliar':False},
+            'exportacao_csv_auxiliar':False,
+            'perfil_ranking':ranking_size,'limite_posts':posts_limit,'limite_hashtags':tags_limit,
+            'hashtag_excluida':'#'+excluded_tag if excluded_tag else None,
+            'escopo_exclusao':'somente ranking de hashtags; demais métricas de postagens preservadas'},
         'contagens':{'linhas_lidas':total,'publicacoes_unicas':seq,'duplicatas_ignoradas':duplicates,
             'registros_sem_chave_confiavel':without_key,'postagens_datadas':dated,
             'datas_ausentes_invalidas':without_date,'autores_distintos':len(authors),
             'hashtags_distintas':len(tag_count),'posts_ranqueados':len(top_posts),
+            'hashtags_exibidas':len(tags_sorted),'posts_exibidos':len(top_posts),
             'posts_sem_pontuacao_valida':no_score,'origem_datas':dict(date_sources),
-            'avisos':dict(causes),'dias_no_intervalo':span},
+            'avisos':dict(causes),'dias_com_postagens':days_with_posts,
+            'dias_no_intervalo':span,'dias_sem_postagens_no_intervalo':span-days_with_posts},
         'resumo':{'primeiro_dia':first.isoformat(),'ultimo_dia':last.isoformat(),
+            'datas_mais_antigas_observadas':[d.isoformat() for d in sorted(days_count)[:10]],
+            'datas_mais_recentes_observadas':[d.isoformat() for d in sorted(days_count)[-10:]],
             'maior_volume_diario':peak,'dias_pico':peaks,'maior_volume_minuto':minute_peak,
             'mais_utilizadas':[['#'+tag,n] for tag,n in tags_sorted[:10]]},
         'observacao':'Datas representam a PUBLICAÇÃO, não a coleta. A interface funciona sem conexão à internet.'}
 
-def execute(kind,inp,out_base,recursive=False,self_loops=False,mode='static',timezone_name='America/Sao_Paulo'):
+def execute(kind,inp,out_base,recursive=False,self_loops=False,mode='static',timezone_name='America/Sao_Paulo',cleaning_mode='post',ranking_size='15',exclude_tag=None):
     kind_dir = {'merge':'merge','process':'rede_mencoes_'+mode,
                 'sum':'metadados_soma','rank':'metadados_ranking_posts',
-                'hashtags':'metadados_ranking_hashtags', 'timeline':'timeline'}[kind]
+                'hashtags':'metadados_ranking_hashtags', 'timeline':'timeline',
+                 'clean':'limpeza_'+cleaning_mode}[kind]
     folder=unique_run_dir(out_base,kind_dir)
     log=RunLogger(folder/'execucao.log.txt')
-    report={'execucao':{'operacao':kind,'modo':mode if kind=='process' else None,
+    report={'execucao':{'operacao':kind,'modo':mode if kind=='process' else cleaning_mode if kind=='clean' else None,
             'inicio_utc':datetime.now(timezone.utc).isoformat(),'pasta':str(folder),
-            'versao':'0.8','status':'EM_ANDAMENTO'}}
+            'versao':'0.13.1','status':'EM_ANDAMENTO'}}
     try:
         log.say(f'INÍCIO: {kind}/{mode}; origem={inp}; destino={folder}')
         if kind=='merge':
@@ -820,7 +994,9 @@ def execute(kind,inp,out_base,recursive=False,self_loops=False,mode='static',tim
         elif kind=='hashtags':
             report['resultado']=metadata_hashtags(inp,folder,log)
         elif kind=='timeline':
-            report['resultado']=timeline_dashboard(inp,folder,log,tz_name=timezone_name)
+            report['resultado']=timeline_dashboard(inp,folder,log,tz_name=timezone_name,ranking_size=ranking_size,exclude_tag=exclude_tag)
+        elif kind=='clean':
+            report['resultado']=clean_duplicates(inp,folder,log,cleaning_mode=cleaning_mode)
         report['execucao']['status']='CONCLUÍDO'
         log.say('Execução concluída com sucesso.')
     except Exception as exc:
@@ -833,9 +1009,12 @@ def execute(kind,inp,out_base,recursive=False,self_loops=False,mode='static',tim
         report['execucao']['fim_utc']=datetime.now(timezone.utc).isoformat()
         save_report(folder,report,log)
         (folder/'configuracao.json').write_text(json.dumps({
-            'operacao':kind,'modo':mode if kind=='process' else None,
+            'operacao':kind,'modo':mode if kind=='process' else cleaning_mode if kind=='clean' else None,
             'entrada':str(inp),'recursive':recursive,'self_loops':self_loops,
-            'pasta_saida':str(folder),'timezone':timezone_name},indent=2,ensure_ascii=False),encoding='utf-8')
+            'pasta_saida':str(folder),'timezone':timezone_name,
+            'cleaning_mode':cleaning_mode if kind=='clean' else None,
+            'ranking_size':ranking_size if kind=='timeline' else None,
+            'exclude_tag':'#'+normalize_excluded_hashtag(exclude_tag) if kind=='timeline' and normalize_excluded_hashtag(exclude_tag) else None},indent=2,ensure_ascii=False),encoding='utf-8')
         log.close()
     return folder
 
@@ -861,22 +1040,24 @@ def menu_interativo():
     def all_csv():
         files=listar_csvs(folder)
         generated=sorted(output.glob('merge_*/twitter_consolidado.csv')) if output.exists() else []
-        return files+generated
+        cleaned=sorted(output.glob('limpeza_*/*_limpo.csv')) if output.exists() else []
+        return files+generated+cleaned
 
     while True:
         files=listar_csvs(folder)
         print('\n' + '='*54)
-        print('            ZEE v0.8 — ZEESCHUIMER / X')
+        print('            ZEE v0.13.1 — ZEESCHUIMER / X')
         print('='*54)
         print('\n  [1] Merge\n')
         print('  [2] Geração de Redes\n')
         print('  [3] Metadados\n')
         print('  [4] Timeline — postagens por dia e minuto\n')
-        print('  [5] Sair\n')
+        print('  [5] Limpeza — remover duplicatas\n')
+        print('  [6] Sair\n')
         print('-'*54)
         try:
             choice=input('Escolha: ').strip()
-            if choice=='5': return
+            if choice=='6': return
             if choice=='1':
                 if len(files)<2:
                     print('Coloque pelo menos dois CSVs na pasta do script.'); continue
@@ -925,8 +1106,36 @@ def menu_interativo():
                 print('\nTimeline por DATA DE PUBLICAÇÃO (não data de coleta).')
                 print('Fuso padrão: America/Sao_Paulo. Datas serão agrupadas por dia e minuto locais.')
                 tz_choice=input('Fuso IANA [Enter = America/Sao_Paulo]: ').strip() or 'America/Sao_Paulo'
-                dest=execute('timeline',selected,output,timezone_name=tz_choice)
+                print('\nRANQUEAMENTOS DO DASHBOARD')
+                print('  [1] 50 postagens + todas as hashtags')
+                print('  [2] 25 postagens + 25 hashtags')
+                print('  [3] 15 postagens + 15 hashtags (padrão)')
+                preset_choice=input('Escolha [Enter = 3]: ').strip() or '3'
+                presets={'1':'all','2':'25','3':'15'}
+                if preset_choice not in presets:
+                    print('Opção inválida.'); continue
+                excluded=input('Excluir alguma hashtag do ranking? [Enter = nenhuma; ex.: #riograndedosul]: ').strip()
+                if excluded:
+                    excluded=normalize_excluded_hashtag(excluded)
+                    print(f'A hashtag #{excluded} será excluída apenas do ranking, não do dataset.')
+                dest=execute('timeline',selected,output,timezone_name=tz_choice,
+                             ranking_size=presets[preset_choice],exclude_tag=excluded)
                 print(f'\nDashboard em: {dest}\n')
+            elif choice=='5':
+                print('\nLIMPEZA DE DUPLICATAS')
+                print('  [1] Mesmo post (ID/link) — padrão\n')
+                print('  [2] Linha inteira idêntica\n')
+                print('  [0] Voltar\n')
+                selection=input('Escolha: ').strip()
+                if selection=='0': continue
+                if selection not in ('1','2'):
+                    print('Opção inválida.'); continue
+                selected=escolher_csv(all_csv())
+                if selected is None: continue
+                selected_mode='post' if selection=='1' else 'exact'
+                print('O CSV original NÃO será modificado; será criado um novo arquivo limpo.')
+                dest=execute('clean',selected,output,cleaning_mode=selected_mode)
+                print(f'Resultados em: {dest}')
             else:
                 print('Opção inválida.')
         except (EOFError,KeyboardInterrupt):
@@ -937,7 +1146,7 @@ def menu_interativo():
 
 def main():
     if len(sys.argv)==1: return menu_interativo()
-    p=argparse.ArgumentParser(description='ZEE v0.8 — merge, redes de menções, metadados e Timeline')
+    p=argparse.ArgumentParser(description='ZEE v0.13.1 — merge, redes de menções, metadados, Timeline e limpeza')
     sub=p.add_subparsers(dest='command',required=True)
     m=sub.add_parser('merge',help='Consolidar CSVs Zeeschuimer')
     m.add_argument('folder'); m.add_argument('-o','--output',required=True)
@@ -951,16 +1160,26 @@ def main():
                               ('hashtags','Exportar frequência de hashtags')]:
         item=sub.add_parser(command,help=help_text)
         item.add_argument('csv'); item.add_argument('-o','--output',required=True)
+    c=sub.add_parser('clean',help='Criar CSV sem duplicatas (sem alterar a origem)')
+    c.add_argument('csv'); c.add_argument('-o','--output',required=True)
+    c.add_argument('--mode',dest='cleaning_mode',choices=['post','exact'],default='post',
+                   help='post=mesma publicação por ID/link; exact=linha inteira idêntica')
     t=sub.add_parser('timeline',help='Dashboard HTML integrado (Timeline, Posts e Hashtags)')
     t.add_argument('csv'); t.add_argument('-o','--output',required=True)
     t.add_argument('--timezone',default='America/Sao_Paulo',help='Fuso IANA para agregação diária')
+    t.add_argument('--ranking-size',choices=['all','25','15'],default='15',
+                   help='all=50 posts/todas as tags; 25=25/25; 15=15/15 (padrão)')
+    t.add_argument('--exclude-tag',default=None,
+                   help='Remover uma hashtag apenas do ranking no dashboard (ex.: #riograndedosul)')
     args=p.parse_args()
     try:
         if args.command=='sum':
             print(f'ATENÇÃO: o CSV será modificado com backup .bak: {args.csv}')
         folder=execute(args.command,args.folder if args.command=='merge' else args.csv,
                        args.output,recursive=getattr(args,'recursive',False),
-                       self_loops=getattr(args,'self_loops',False),mode=getattr(args,'mode','static'),timezone_name=getattr(args,'timezone','America/Sao_Paulo'))
+                       self_loops=getattr(args,'self_loops',False),mode=getattr(args,'mode','static'),timezone_name=getattr(args,'timezone','America/Sao_Paulo'),
+                       cleaning_mode=getattr(args,'cleaning_mode','post'),
+                       ranking_size=getattr(args,'ranking_size','15'),exclude_tag=getattr(args,'exclude_tag',None))
         print(f'Resultados em: {folder}')
     except Exception as exc:
         p.exit(1,f'Erro: {exc}\n')

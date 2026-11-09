@@ -1,0 +1,5 @@
+[2026-11-07T20:05:19+00:00] [INFO] INÍCIO: process/static; origem=/mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/twitter_consolidado.csv; destino=/mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/output/rede_mencoes_static_20261107_170518_997684
+[2026-11-07T20:05:22+00:00] [INFO] Rede estática agregada salva: /mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/output/rede_mencoes_static_20261107_170518_997684/twitter_consolidado_rede.gexf
+[2026-11-07T20:05:22+00:00] [INFO] Rede: 7728 nós, 2363 pares, 3330 eventos; 0 sem data.
+[2026-11-07T20:05:22+00:00] [INFO] Execução concluída com sucesso.
+[2026-11-07T20:05:22+00:00] [INFO] Relatório salvo: /mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/output/rede_mencoes_static_20261107_170518_997684/relatorio_processamento.txt

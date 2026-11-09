@@ -1,0 +1,12 @@
+{
+  "operacao": "process",
+  "modo": "static",
+  "entrada": "/mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/twitter_consolidado.csv",
+  "recursive": false,
+  "self_loops": false,
+  "pasta_saida": "/mnt/c/Users/ribei/OneDrive/Documentos/GitHub 👾/zee/output/rede_mencoes_static_20261107_170518_997684",
+  "timezone": "America/Sao_Paulo",
+  "cleaning_mode": null,
+  "ranking_size": null,
+  "exclude_tag": null
+}
