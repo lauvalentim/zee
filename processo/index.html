@@ -1,0 +1,1172 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <title>#Eleições2026 — Operações sociotécnicas</title>
+
+  <!-- Estilos da interface -->
+  <style>
+    :root {
+      --white: #fff;
+      --ink: #131313;
+      --green: #15803d;
+      --blue: #1d4ed8;
+      --font-interface: "SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+      --font-display: "Libre Baskerville",Georgia,"Times New Roman",serif;
+      color-scheme: light;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #fff;
+      color: var(--ink);
+      font-family: var(--font-interface);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button,input {
+      font: inherit;
+      color: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:focus-visible,input:focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: 3px;
+    }
+
+    .site-header {
+      height: 84px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 0 32px;
+    }
+
+    .brand-pill,.view-pill {
+      height: 44px;
+      border-radius: 30px;
+      background: rgba(250,250,250,.94);
+      box-shadow: 0 4px 4px #0002;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-pill {
+      position: absolute;
+      left: clamp(12px,2.4vw,46px);
+      padding: 0 15px;
+      min-width: 146px;
+      white-space: nowrap;
+    }
+
+    .brand-hash {
+      font-size: 18px;
+      font-weight: 750;
+      line-height: 1;
+    }
+
+    .brand-initial {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-weight: 700;
+      font-size: 23px;
+      line-height: 1;
+    }
+
+    .brand-rest {
+      font-size: 10px;
+      margin-top: 3px;
+    }
+
+    .view-pill {
+      padding: 0 24px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #f0f0f0;
+    }
+
+    main {
+      max-width: 1600px;
+      margin: auto;
+      padding: 0 clamp(16px,2.4vw,46px) 20px;
+    }
+
+    .intro {
+      margin: 12px 0 20px;
+    }
+
+    .intro h1 {
+      font-size: clamp(25px,2.5vw,27px);
+      letter-spacing: -.035em;
+      font-weight: 680;
+      margin: 0 0 7px;
+    }
+
+    .intro p {
+      font-size: 11px;
+      color: #6e6e6e;
+      margin: 0;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 230px minmax(0,1fr) 255px;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .controls,aside {
+      background: #fafafa;
+      border: 1px solid #e8e8e8;
+      border-radius: 28px;
+      padding: 18px;
+      min-width: 0;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      color: #777;
+      letter-spacing: .035em;
+      margin: 0 0 9px;
+    }
+
+    .legend {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    button,input {
+      border: 1px solid #e4e4e4;
+      background: #fff;
+      border-radius: 26px;
+      padding: 9px 13px;
+      font-size: 12px;
+      transition: background .2s;
+    }
+
+    button:hover {
+      background: #e5e7eb;
+    }
+
+    button.off {
+      opacity: .38;
+      background: transparent;
+    }
+
+    .legend button {
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      border-color: transparent;
+      background: #f0f0f0;
+    }
+
+    .legend button.off {
+      background: transparent;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 6px;
+      flex: none;
+    }
+
+    input {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .stage {
+      position: relative;
+      min-width: 0;
+      background: white;
+      border: 1px solid #ededed;
+      border-radius: 28px;
+      overflow: hidden;
+    }
+
+    .stage svg {
+      display: block;
+      width: 100%;
+      height: clamp(480px,72vh,850px);
+      touch-action: none;
+    }
+
+    .zoom {
+      position: absolute;
+      bottom: 14px;
+      left: 14px;
+      display: flex;
+      gap: 5px;
+      padding: 5px;
+      background: #fafafa;
+      border-radius: 30px;
+      box-shadow: 0 4px 15px #00000012;
+    }
+
+    .zoom button {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      font-size: 20px;
+    }
+
+    .zoom #reset {
+      width: auto;
+      padding: 0 12px;
+      font-size: 12px;
+    }
+
+    .core-key {
+      font-size: 11px;
+      color: #717171;
+      line-height: 1.5;
+    }
+
+    .core-key span {
+      color: var(--blue);
+      font-size: 18px;
+      vertical-align: middle;
+    }
+
+    aside {
+      max-height: 72vh;
+      overflow: auto;
+      min-height: 240px;
+    }
+
+    aside h2 {
+      font-size: 22px;
+      letter-spacing: -.035em;
+      margin: 10px 0;
+    }
+
+    p {
+      line-height: 1.55;
+    }
+
+    .small {
+      font-size: 12px;
+      color: #717171;
+    }
+
+    aside p {
+      font-size: 13px;
+    }
+
+    .connection {
+      padding: 11px 0;
+      border-bottom: 1px solid #e4e4e4;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .connection:hover {
+      color: var(--blue);
+    }
+
+    #status {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 11px;
+      color: #777;
+    }
+
+    #core {
+      width: 100%;
+      white-space: normal;
+      line-height: 1.4;
+    }
+
+    #core:hover {
+      border-color: var(--blue);
+    }
+
+    @media (max-width:1050px) {
+      .workspace {
+        grid-template-columns: 185px minmax(0,1fr) 210px;
+        gap: 9px;
+      }
+
+      .controls,aside {
+        padding: 13px;
+        border-radius: 22px;
+      }
+    }
+
+    @media (max-width:780px) {
+      .site-header {
+        height: 94px;
+        justify-content: flex-end;
+        padding: 0 16px;
+      }
+
+      .brand-pill {
+        left: 16px;
+        min-width: 0;
+      }
+
+      .view-pill {
+        padding: 0 14px;
+        font-size: 11px;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        gap: 9px;
+      }
+
+      .legend {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+
+      .legend button {
+        padding: 6px 9px;
+      }
+
+      .stage svg {
+        height: 60vh;
+        min-height: 360px;
+      }
+
+      aside {
+        max-height: 350px;
+        min-height: 0;
+      }
+
+      .intro {
+        margin-top: 0;
+      }
+
+      .core-key {
+        margin: 0;
+      }
+    }
+
+    @media (prefers-reduced-motion:reduce) {
+      button,input {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="brand-pill" aria-label="Eleições 2026">
+      <span class="brand-hash">#</span><span class="brand-initial">E</span><span class="brand-rest">eleições 2026</span>
+    </div>
+    <div class="view-pill">Visualizações / Processo projetual</div>
+  </header>
+  <main>
+    <div class="intro">
+      <h1>Operações sociotécnicas</h1>
+      <p>Explore as articulações entre tecnologias, decisões e processos do projeto #Eleições2026.</p>
+    </div>
+    <div class="workspace">
+      <section class="controls" aria-label="Controles de exploração">
+        <div>
+          <p class="eyebrow">EXPLORAR A REDE</p>
+          <input id="search" aria-label="Buscar elemento" placeholder="Buscar elemento...">
+        </div>
+        <div>
+          <p class="eyebrow">CATEGORIAS</p>
+          <div id="legend" class="legend">
+          </div>
+        </div>
+        <button id="core">Apenas núcleo estruturante</button>
+        <div class="core-key"><span>━</span> Articulações estruturantes<br>Os nós maiores indicam tecnologias estruturantes.</div>
+      </section>
+      <div class="stage">
+        <svg id="graph" viewBox="0 0 920 880" aria-label="Grafo de operações sociotécnicas">
+        </svg>
+        <div class="zoom">
+          <button id="minus" aria-label="Diminuir zoom">−</button>
+          <button id="plus" aria-label="Aumentar zoom">+</button>
+          <button id="reset">Restaurar</button>
+        </div>
+      </div>
+      <aside id="info" aria-label="Informações do elemento">
+      </aside>
+    </div>
+    <div id="status" class="small" aria-live="polite">
+    </div>
+  </main>
+
+  <!-- Dados e lógica interativa -->
+  <script>
+    // Dados da rede
+    const data = {
+        "nodes": [
+            {
+                "id": "x",
+                "label": "Twitter/X",
+                "category": "Tecnologias",
+                "weight": 1,
+                "x": 60,
+                "y": 100,
+                "description": "Plataforma de origem dos registros."
+            },
+            {
+                "id": "recorte",
+                "label": "Recorte do corpus",
+                "category": "Decisões",
+                "weight": 1,
+                "x": 240,
+                "y": 45,
+                "description": "Delimitação temática, temporal, linguística e de engajamento."
+            },
+            {
+                "id": "zeesch",
+                "label": "Zeeschuimer",
+                "category": "Tecnologias",
+                "weight": 3,
+                "x": 285,
+                "y": 250,
+                "description": "Tecnologia estruturante responsável pela coleta."
+            },
+            {
+                "id": "collect",
+                "label": "Coleta de dados",
+                "category": "Operações",
+                "weight": 1,
+                "x": 105,
+                "y": 230,
+                "description": "Extração dos registros apresentados durante a navegação."
+            },
+            {
+                "id": "raw",
+                "label": "Publicações coletadas",
+                "category": "Dados",
+                "weight": 1,
+                "x": 415,
+                "y": 100,
+                "description": "Registros obtidos na coleta."
+            },
+            {
+                "id": "zee",
+                "label": "Zee.py",
+                "category": "Tecnologias",
+                "weight": 3,
+                "x": 550,
+                "y": 250,
+                "description": "Tecnologia estruturante responsável pelo tratamento, construção da rede e análise quantitativa."
+            },
+            {
+                "id": "python",
+                "label": "Python",
+                "category": "Tecnologias",
+                "weight": 1,
+                "x": 560,
+                "y": 55,
+                "description": "Linguagem de implementação do script."
+            },
+            {
+                "id": "nx",
+                "label": "NetworkX",
+                "category": "Tecnologias",
+                "weight": 1,
+                "x": 805,
+                "y": 100,
+                "description": "Biblioteca de modelagem de redes."
+            },
+            {
+                "id": "clean",
+                "label": "Tratamento dos dados",
+                "category": "Operações",
+                "weight": 1,
+                "x": 405,
+                "y": 175,
+                "description": "Consolidação, validação e deduplicação dos registros."
+            },
+            {
+                "id": "base",
+                "label": "Banco consolidado",
+                "category": "Artefatos",
+                "weight": 1,
+                "x": 700,
+                "y": 195,
+                "description": "Conjunto de registros organizados."
+            },
+            {
+                "id": "net",
+                "label": "Construção da rede",
+                "category": "Operações",
+                "weight": 1,
+                "x": 790,
+                "y": 300,
+                "description": "Construção de relações direcionadas entre usuários."
+            },
+            {
+                "id": "mentions",
+                "label": "Menções",
+                "category": "Dados",
+                "weight": 1,
+                "x": 865,
+                "y": 215,
+                "description": "Atributo utilizado para definir as relações."
+            },
+            {
+                "id": "files",
+                "label": "Arquivos de rede",
+                "category": "Artefatos",
+                "weight": 1,
+                "x": 840,
+                "y": 420,
+                "description": "Exportações GEXF, JSON e CSV de eventos."
+            },
+            {
+                "id": "gephi",
+                "label": "Gephi",
+                "category": "Tecnologias",
+                "weight": 3,
+                "x": 550,
+                "y": 510,
+                "description": "Tecnologia estruturante responsável pelas métricas e modelagem visual."
+            },
+            {
+                "id": "metrics",
+                "label": "Métricas de rede",
+                "category": "Operações",
+                "weight": 1,
+                "x": 680,
+                "y": 405,
+                "description": "Grau e PageRank."
+            },
+            {
+                "id": "layout",
+                "label": "Distribuição espacial",
+                "category": "Operações",
+                "weight": 1,
+                "x": 750,
+                "y": 505,
+                "description": "Organização espacial pelo algoritmo Yifan Hu."
+            },
+            {
+                "id": "visual",
+                "label": "Codificação visual",
+                "category": "Decisões",
+                "weight": 1,
+                "x": 820,
+                "y": 610,
+                "description": "Diferenciação por cor e tamanho a partir do PageRank."
+            },
+            {
+                "id": "sigma",
+                "label": "Sigma.js",
+                "category": "Tecnologias",
+                "weight": 1,
+                "x": 740,
+                "y": 720,
+                "description": "Tecnologia associada à exportação web."
+            },
+            {
+                "id": "figma",
+                "label": "Figma",
+                "category": "Tecnologias",
+                "weight": 3,
+                "x": 285,
+                "y": 510,
+                "description": "Tecnologia estruturante responsável pela concepção visual e prototipação."
+            },
+            {
+                "id": "proto",
+                "label": "Prototipação",
+                "category": "Operações",
+                "weight": 1,
+                "x": 140,
+                "y": 555,
+                "description": "Organização gráfica das interfaces."
+            },
+            {
+                "id": "rank",
+                "label": "Ranking de postagens",
+                "category": "Operações",
+                "weight": 1,
+                "x": 175,
+                "y": 370,
+                "description": "Ordenação por soma das interações."
+            },
+            {
+                "id": "tags",
+                "label": "Ranking de hashtags",
+                "category": "Operações",
+                "weight": 1,
+                "x": 65,
+                "y": 410,
+                "description": "Ordenação das hashtags por frequência."
+            },
+            {
+                "id": "time",
+                "label": "Análise temporal",
+                "category": "Operações",
+                "weight": 1,
+                "x": 60,
+                "y": 320,
+                "description": "Agregação de publicações por dia e minuto."
+            },
+            {
+                "id": "plotly",
+                "label": "Plotly",
+                "category": "Tecnologias",
+                "weight": 1,
+                "x": 65,
+                "y": 685,
+                "description": "Biblioteca de gráficos interativos."
+            },
+            {
+                "id": "dash",
+                "label": "Dashboard",
+                "category": "Artefatos",
+                "weight": 1,
+                "x": 240,
+                "y": 750,
+                "description": "Ambiente de síntese quantitativa."
+            },
+            {
+                "id": "js",
+                "label": "JavaScript",
+                "category": "Tecnologias",
+                "weight": 1,
+                "x": 390,
+                "y": 665,
+                "description": "Implementação de navegação e interação."
+            },
+            {
+                "id": "d3",
+                "label": "D3.js",
+                "category": "Tecnologias",
+                "weight": 1,
+                "x": 610,
+                "y": 620,
+                "description": "Biblioteca associada à maleabilidade dos nós."
+            },
+            {
+                "id": "interact",
+                "label": "Exploração interativa",
+                "category": "Operações",
+                "weight": 1,
+                "x": 530,
+                "y": 725,
+                "description": "Busca, filtros, seleção, zoom e manipulação."
+            },
+            {
+                "id": "ui",
+                "label": "Interface de rede",
+                "category": "Artefatos",
+                "weight": 1,
+                "x": 650,
+                "y": 815,
+                "description": "Ambiente interativo de exploração das relações."
+            },
+            {
+                "id": "site",
+                "label": "Site do projeto",
+                "category": "Artefatos",
+                "weight": 1,
+                "x": 415,
+                "y": 830,
+                "description": "Integração da rede, dashboard e contextualização."
+            }
+        ],
+        "edges": [
+            {
+                "source": "x",
+                "target": "collect",
+                "relation": "fornece registros",
+                "core": false
+            },
+            {
+                "source": "recorte",
+                "target": "collect",
+                "relation": "delimita",
+                "core": false
+            },
+            {
+                "source": "zeesch",
+                "target": "collect",
+                "relation": "viabiliza",
+                "core": false
+            },
+            {
+                "source": "collect",
+                "target": "raw",
+                "relation": "produz",
+                "core": false
+            },
+            {
+                "source": "raw",
+                "target": "clean",
+                "relation": "alimenta",
+                "core": false
+            },
+            {
+                "source": "zee",
+                "target": "clean",
+                "relation": "executa",
+                "core": false
+            },
+            {
+                "source": "clean",
+                "target": "base",
+                "relation": "produz",
+                "core": false
+            },
+            {
+                "source": "python",
+                "target": "zee",
+                "relation": "implementa",
+                "core": false
+            },
+            {
+                "source": "nx",
+                "target": "net",
+                "relation": "viabiliza",
+                "core": false
+            },
+            {
+                "source": "zee",
+                "target": "net",
+                "relation": "executa",
+                "core": false
+            },
+            {
+                "source": "base",
+                "target": "net",
+                "relation": "alimenta",
+                "core": false
+            },
+            {
+                "source": "mentions",
+                "target": "net",
+                "relation": "define relações",
+                "core": false
+            },
+            {
+                "source": "net",
+                "target": "files",
+                "relation": "produz",
+                "core": false
+            },
+            {
+                "source": "files",
+                "target": "gephi",
+                "relation": "alimenta",
+                "core": false
+            },
+            {
+                "source": "gephi",
+                "target": "metrics",
+                "relation": "calcula",
+                "core": false
+            },
+            {
+                "source": "gephi",
+                "target": "layout",
+                "relation": "executa",
+                "core": false
+            },
+            {
+                "source": "metrics",
+                "target": "visual",
+                "relation": "fundamenta",
+                "core": false
+            },
+            {
+                "source": "layout",
+                "target": "ui",
+                "relation": "fornece coordenadas",
+                "core": false
+            },
+            {
+                "source": "visual",
+                "target": "ui",
+                "relation": "orienta",
+                "core": false
+            },
+            {
+                "source": "gephi",
+                "target": "sigma",
+                "relation": "prepara exportação",
+                "core": false
+            },
+            {
+                "source": "sigma",
+                "target": "ui",
+                "relation": "viabiliza",
+                "core": false
+            },
+            {
+                "source": "zee",
+                "target": "rank",
+                "relation": "executa",
+                "core": false
+            },
+            {
+                "source": "zee",
+                "target": "tags",
+                "relation": "executa",
+                "core": false
+            },
+            {
+                "source": "zee",
+                "target": "time",
+                "relation": "executa",
+                "core": false
+            },
+            {
+                "source": "base",
+                "target": "rank",
+                "relation": "alimenta",
+                "core": false
+            },
+            {
+                "source": "base",
+                "target": "tags",
+                "relation": "alimenta",
+                "core": false
+            },
+            {
+                "source": "base",
+                "target": "time",
+                "relation": "alimenta",
+                "core": false
+            },
+            {
+                "source": "rank",
+                "target": "dash",
+                "relation": "integra",
+                "core": false
+            },
+            {
+                "source": "tags",
+                "target": "dash",
+                "relation": "integra",
+                "core": false
+            },
+            {
+                "source": "time",
+                "target": "dash",
+                "relation": "integra",
+                "core": false
+            },
+            {
+                "source": "plotly",
+                "target": "dash",
+                "relation": "viabiliza",
+                "core": false
+            },
+            {
+                "source": "figma",
+                "target": "proto",
+                "relation": "viabiliza",
+                "core": false
+            },
+            {
+                "source": "proto",
+                "target": "dash",
+                "relation": "orienta",
+                "core": false
+            },
+            {
+                "source": "proto",
+                "target": "ui",
+                "relation": "orienta",
+                "core": false
+            },
+            {
+                "source": "js",
+                "target": "interact",
+                "relation": "implementa",
+                "core": false
+            },
+            {
+                "source": "d3",
+                "target": "interact",
+                "relation": "viabiliza maleabilidade",
+                "core": false
+            },
+            {
+                "source": "interact",
+                "target": "ui",
+                "relation": "integra",
+                "core": false
+            },
+            {
+                "source": "dash",
+                "target": "site",
+                "relation": "integra",
+                "core": false
+            },
+            {
+                "source": "ui",
+                "target": "site",
+                "relation": "integra",
+                "core": false
+            },
+            {
+                "source": "zeesch",
+                "target": "zee",
+                "relation": "articulação projetual",
+                "core": true
+            },
+            {
+                "source": "zeesch",
+                "target": "gephi",
+                "relation": "articulação projetual",
+                "core": true
+            },
+            {
+                "source": "zeesch",
+                "target": "figma",
+                "relation": "articulação projetual",
+                "core": true
+            },
+            {
+                "source": "zee",
+                "target": "gephi",
+                "relation": "articulação projetual",
+                "core": true
+            },
+            {
+                "source": "zee",
+                "target": "figma",
+                "relation": "articulação projetual",
+                "core": true
+            },
+            {
+                "source": "gephi",
+                "target": "figma",
+                "relation": "articulação projetual",
+                "core": true
+            }
+        ]
+    };
+
+    // Estado e interação
+    // Configuração visual independente dos dados da rede.
+    const visualConfig = {
+        palette: {
+            "Tecnologias": "#cc0f91", 
+            "Operações": "#042fb1",
+            "Dados": "#12902e", 
+            "Decisões": "#ebdb05",
+            "Artefatos": "#c40c0c"
+        },
+        nodes: {
+            coreRadius: 25,
+            defaultRadius: 9,
+            selectedStroke: "#131313"
+        },
+        edges: {
+            coreColor: "#1D4ED8",
+            defaultColor: "#A8A8A8",
+            coreWidth: 3,
+            defaultWidth: 1.2,
+            selectedWidth: 2.5
+        },
+        labels: {
+            color: "#131313",
+            coreSize: 17,
+            defaultSize: 12
+        }
+    };
+
+    // Formação da rede, sem atributos de cor nos nós.
+    const nodes = data.nodes.map(n => ({ ...n, ox: n.x, oy: n.y }));
+    const edges = data.edges;
+    const by = Object.fromEntries(nodes.map(n => [n.id, n]));
+
+    // Atribuição visual por categoria, durante a renderização.
+    const cats = visualConfig.palette;
+    const nodeColor = n => cats[n.category];
+    document.querySelector('.core-key span').style.color = visualConfig.edges.coreColor;
+    const svg = document.querySelector('#graph'), info = document.querySelector('#info'), legend = document.querySelector('#legend'), ns = 'http://www.w3.org/2000/svg';
+    let active = new Set(Object.keys(cats)), selected = null, zoom = 1, query = '', coreOnly = false, drag = null;
+    function el(t, a = {}, txt) {
+        let e = document.createElementNS(ns, t);
+        for (const [k, v] of Object.entries(a))
+            e.setAttribute(k, v);
+        if (txt !== undefined)
+            e.textContent = txt;
+        return e;
+    }
+    for (const [label, color] of Object.entries(cats)) {
+        let b = document.createElement('button');
+        b.innerHTML = '<span class="dot" style="background:' + color + '"></span>' + label;
+        b.onclick = () => {
+            active.has(label) ? active.delete(label) : active.add(label);
+            b.classList.toggle('off', !active.has(label));
+            render();
+        };
+        legend.append(b);
+    }
+    function select(id) {
+        selected = selected === id ? null : id;
+        details();
+        render();
+    }
+    function details() {
+        if (!selected) {
+            info.innerHTML = '<div class="small">EXPLORAÇÃO</div><h2>Núcleo estruturante</h2><p>As quatro tecnologias principais possuem conexões diretas entre si.</p><p>As linhas estruturantes representam articulações projetuais. As demais representam relações operacionais.</p><p class="small">Selecione ou arraste um nó.</p>';
+            return;
+        }
+        let n = by[selected], rel = edges.filter(e => e.source === selected || e.target === selected).sort((a, b) => Number(b.core) - Number(a.core));
+        info.innerHTML = '<div class="small"><span class="dot" style="background:' + nodeColor(n) + '"></span>' + n.category + '</div><h2>' + n.label + '</h2><p>' + n.description + '</p>' + (n.weight === 3 ? '<p class="small">Relevância estruturante · peso 3</p>' : '') + '<strong>' + rel.length + ' conexões</strong>';
+        for (const e of rel) {
+            let out = e.source === selected, other = by[out ? e.target : e.source], d = document.createElement('div');
+            d.className = 'connection';
+            d.innerHTML = '<div class="small" style="color:' + (e.core ? visualConfig.edges.coreColor : 'inherit') + '">' + (e.core ? '↔ ' : out ? '→ ' : '← ') + e.relation + '</div>' + other.label;
+            d.onclick = () => select(other.id);
+            info.append(d);
+        }
+    }
+    function render() {
+        svg.replaceChildren();
+        let g = el('g', { transform: `translate(${460 * (1 - zoom)},${440 * (1 - zoom)}) scale(${zoom})` });
+        svg.append(g);
+        let visible = new Set(nodes.filter(n => active.has(n.category) && (!coreOnly || n.weight === 3) && (!query || (n.label + ' ' + n.description).toLowerCase().includes(query))).map(n => n.id));
+        if (query && !coreOnly) {
+            let m = new Set(visible);
+            for (const e of edges) {
+                if (m.has(e.source) && active.has(by[e.target].category))
+                    visible.add(e.target);
+                if (m.has(e.target) && active.has(by[e.source].category))
+                    visible.add(e.source);
+            }
+        }
+        let near = new Set([selected]), count = 0;
+        for (const e of edges) {
+            if (e.source === selected)
+                near.add(e.target);
+            if (e.target === selected)
+                near.add(e.source);
+            if (!visible.has(e.source) || !visible.has(e.target))
+                continue;
+            count++;
+            let p = by[e.source], q = by[e.target], hi = selected && (e.source === selected || e.target === selected), l = el('line', { x1: p.x, y1: p.y, x2: q.x, y2: q.y, stroke: hi
+    ? nodeColor(by[selected])
+    : visualConfig.edges.defaultColor, 'stroke-width': e.core ? visualConfig.edges.coreWidth : hi ? visualConfig.edges.selectedWidth : visualConfig.edges.defaultWidth, opacity: selected ? (hi ? 1 : .08) : e.core ? .8 : .38 });
+            l.append(el('title', {}, p.label + (e.core ? ' ↔ ' : ' → ') + q.label + ': ' + e.relation));
+            g.append(l);
+        }
+        for (const n of nodes) {
+            if (!visible.has(n.id))
+                continue;
+            let r = n.weight === 3 ? visualConfig.nodes.coreRadius : visualConfig.nodes.defaultRadius, ng = el('g', { transform: `translate(${n.x},${n.y})`, opacity: selected && !near.has(n.id) ? .12 : 1, style: 'cursor:grab' });
+            ng.append(el('circle', { r, fill: nodeColor(n), stroke: selected === n.id ? visualConfig.nodes.selectedStroke : 'none', 'stroke-width': 2 }));
+            let t = el('text', { y: r + 17, 'text-anchor': 'middle', 'font-size': n.weight === 3 ? visualConfig.labels.coreSize : visualConfig.labels.defaultSize, 'font-weight': n.weight === 3 ? 700 : 400, fill: visualConfig.labels.color });
+            if (n.label.length > 19) {
+                let a = '', b = '';
+                for (const w of n.label.split(' ')) {
+                    if (!b && (a + ' ' + w).trim().length <= 17)
+                        a = (a + ' ' + w).trim();
+                    else
+                        b = (b + ' ' + w).trim();
+                }
+                t.append(el('tspan', { x: 0 }, a), el('tspan', { x: 0, dy: 14 }, b));
+            }
+            else
+                t.textContent = n.label;
+            ng.append(t, el('title', {}, n.description));
+            ng.onpointerdown = e => {
+                e.preventDefault();
+                drag = { n, x: e.clientX, y: e.clientY, moved: false };
+                svg.setPointerCapture(e.pointerId);
+            };
+            g.append(ng);
+        }
+        document.querySelector('#status').textContent = visible.size + ' nós · ' + count + ' conexões visíveis';
+    }
+    svg.onpointermove = e => {
+        if (!drag)
+            return;
+        if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 4)
+            drag.moved = true;
+        if (drag.moved) {
+            let p = svg.createSVGPoint();
+            p.x = e.clientX;
+            p.y = e.clientY;
+            p = p.matrixTransform(svg.getScreenCTM().inverse());
+            drag.n.x = (p.x - 460 * (1 - zoom)) / zoom;
+            drag.n.y = (p.y - 440 * (1 - zoom)) / zoom;
+            render();
+        }
+    };
+    svg.onpointerup = () => {
+        if (drag && !drag.moved)
+            select(drag.n.id);
+        drag = null;
+    };
+    svg.onpointercancel = () => drag = null;
+    document.querySelector('#search').oninput = e => {
+        query = e.target.value.toLowerCase();
+        render();
+    };
+    document.querySelector('#plus').onclick = () => {
+        zoom = Math.min(3, zoom * 1.2);
+        render();
+    };
+    document.querySelector('#minus').onclick = () => {
+        zoom = Math.max(.6, zoom / 1.2);
+        render();
+    };
+    document.querySelector('#core').onclick = e => {
+        coreOnly = !coreOnly;
+        selected = null;
+        query = '';
+        active.add('Tecnologias');
+        legend.firstChild.classList.remove('off');
+        document.querySelector('#search').value = '';
+        e.target.textContent = coreOnly ? 'Exibir rede completa' : 'Apenas núcleo estruturante';
+        details();
+        render();
+    };
+    document.querySelector('#reset').onclick = () => {
+        nodes.forEach(n => {
+            n.x = n.ox;
+            n.y = n.oy;
+        });
+        active = new Set(Object.keys(cats));
+        selected = null;
+        zoom = 1;
+        query = '';
+        coreOnly = false;
+        document.querySelector('#search').value = '';
+        document.querySelector('#core').textContent = 'Apenas núcleo estruturante';
+        legend.querySelectorAll('button').forEach(b => b.classList.remove('off'));
+        details();
+        render();
+    };
+    details();
+    render();
+  </script>
+</body>
+</html>
